@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  An AWS SAM template to create a Lambda function that sends a Slack alerts when users execute-command against ECS Containers
+
+Resources:
+  # Uncomment the below code block to enable AWS CodeSigning for the Lambda Function
+  
+  # CodeSigningConfig:
+  #   Type: AWS::Lambda::CodeSigningConfig
+  #   Properties:
+  #     Description: "Code Signing for Lambda Functions in the SAM Template"
+  #     AllowedPublishers:
+  #       SigningProfileVersionArns:
+  #         - arn:aws:signer:eu-central-1:xxxxxxxx:/signing-profiles/SAMSigningProfile/xxxxxxxxxx
+  #     CodeSigningPolicies:
+  #       UntrustedArtifactOnDeployment: "Warn"
+
+  MonitorECSXCommand:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: monitor-ecsx-command
+      Description: Function used to send slack alert when users execute-command against ECS Containers
+      PackageType: Zip
+      Runtime: python3.11
+      Handler: monitor_ecsx_command.monitor_ecsx_command
+      CodeUri: lambdas/monitor-ecsx-command/
+      Timeout: 60
+      # Uncomment the below code block to enable AWS CodeSigning for the Lambda Function
+      # CodeSigningConfigArn: !Ref CodeSigningConfig
+      Architectures:
+        - x86_64
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            InputTransformer:
+              InputPathsMap:
+                "cluster": "$.detail.requestParameters.cluster"
+                "container": "$.detail.requestParameters.container"
+                "eventTime": "$.detail.eventTime"
+                "source_ip": "$.detail.sourceIPAddress"
+                "user": "$.detail.userIdentity.arn"
+              InputTemplate: |
+                {
+                  "event_name": "ECS Cluster Execute-Command Event",
+                  "cluster_name": <cluster>,
+                  "user_arn": <user>,
+                  "user_ip": <source_ip>,
+                  "container_name": <container>,
+                  "time_stamp": <eventTime>
+                }
+            Pattern:
+              source:
+                - "aws.ecs"
+              detail-type:
+                - "AWS API Call via CloudTrail"       
+              detail:
+                eventSource:
+                 - "ecs.amazonaws.com"
+                eventName:
+                  - "ExecuteCommand"
+
+      Environment:
+      # Or use the AWS SSM to store the Slack Webhook URL and retrieve it at runtime
+        Variables:
+          SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/xxxxxxxxxx"
+      
+      # Uncomment the below to deploy your lambda function in a VPC
+      # VpcConfig:
+      #   SecurityGroupIds:
+      #     - sg-xxxxxxxxx
+      #   SubnetIds:
+      #     - subnet-xxxxx
+      #     - subnet-xxxxx
+      #     - subnet-xxxxx
