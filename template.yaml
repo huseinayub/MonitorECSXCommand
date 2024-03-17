@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  An AWS SAM template to create a Lambda function that sends a Slack alerts when users execute-command against ECS Containers
+  An AWS SAM template to create a Lambda function that sends Slack alerts when users execute-command against ECS Containers
 
 Resources:
   # Uncomment the below code block to enable AWS CodeSigning for the Lambda Function
@@ -20,7 +20,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: monitor-ecsx-command
-      Description: Function used to send slack alert when users execute-command against ECS Containers
+      Description: Function used to send Slack alerts when users execute-command against ECS Containers
       PackageType: Zip
       Runtime: python3.11
       Handler: monitor_ecsx_command.monitor_ecsx_command
